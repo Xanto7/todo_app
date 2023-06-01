@@ -85,6 +85,18 @@ class _MainAppState extends State<MainApp> {
                           children: snapshot.data!.map((item) {
                             return Center(
                               child: ListTile(
+                                leading: Checkbox(
+                                  value: item.done,
+                                  onChanged: (bool? value) {
+                                    DatabaseManager.instance.updateItem(Item(
+                                        id: item.id,
+                                        title: item.title,
+                                        done: value!));
+                                    setState(() {});
+                                  },
+                                  activeColor: Colors.white,
+                                  checkColor: Colors.blue,
+                                ),
                                 title: Text(item.title),
                                 onTap: () {
                                   setState(() {
