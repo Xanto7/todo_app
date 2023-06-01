@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/database_manager.dart';
-import 'package:sqflite/sqflite.dart'; // TEMP
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +15,7 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   final TextEditingController itemTextController = TextEditingController();
-  int selectedId = -1;
+  int? selectedId;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +48,7 @@ class _MainAppState extends State<MainApp> {
                   child: ElevatedButton(
                       onPressed: () async {
                         await DatabaseManager.instance.insertItem(
-                            Item(12, itemTextController.text, false));
+                            Item(title: itemTextController.text, done: false));
                         setState(() {
                           itemTextController.clear();
                         });
@@ -60,7 +59,10 @@ class _MainAppState extends State<MainApp> {
                   flex: 1,
                   child: ElevatedButton(
                       onPressed: () async {
-                        await DatabaseManager.instance.deleteItem(selectedId);
+                        if (selectedId != null) {
+                          await DatabaseManager.instance
+                              .deleteItem(selectedId!);
+                        }
                         setState(() {
                           itemTextController.clear();
                         });

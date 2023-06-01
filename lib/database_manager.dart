@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'package:sqflite/sqflite.dart'; // to work with sqllite database
 import 'package:path_provider/path_provider.dart'; // to find Documents folder location depending on os
@@ -6,16 +5,18 @@ import 'package:path/path.dart'; // to have additional functions for path manipu
 
 // data model class of ToDo item
 class Item {
-  late int id;
-  late String title;
-  late bool done;
+  int? id;
+  String title;
+  bool done;
 
   // empty constructor
-  Item(this.id, this.title, this.done);
+  Item({this.id, required this.title, required this.done});
 
   // construct class from json
-  factory Item.fromMap(Map<String, dynamic> map) =>
-      Item(map['id'], map['title'], map['done'] == 1 ? true : false);
+  factory Item.fromMap(Map<String, dynamic> map) => Item(
+      id: map['id'],
+      title: map['title'],
+      done: map['done'] == 1 ? true : false);
 
   // return class as json
   Map<String, dynamic> toMap() {
