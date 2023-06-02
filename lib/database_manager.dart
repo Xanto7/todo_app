@@ -118,4 +118,13 @@ class DatabaseManager {
         .delete(itemTableName, where: 'id = ?', whereArgs: [id_to_delete]);
     return id;
   }
+
+  Future<List<Item>> getFilteredItems(String query) async {
+    Database db = await database;
+    List<Map<String, dynamic>> maps = await db
+        .query(itemTableName, where: 'title LIKE ?', whereArgs: ['%$query%']);
+    List<Item> items =
+        maps.isNotEmpty ? maps.map((x) => Item.fromMap(x)).toList() : [];
+    return items;
+  }
 }

@@ -8,7 +8,7 @@ void main() {
 }
 
 class MainApp extends StatefulWidget {
-  const MainApp({super.key});
+  const MainApp({Key? key}) : super(key: key);
 
   @override
   State<MainApp> createState() => _MainAppState();
@@ -16,9 +16,27 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   final TextEditingController itemTextController = TextEditingController();
-  final TextEditingController updateController = TextEditingController(); //
+  final TextEditingController updateController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
+  String searchString = "";
   int? selectedId;
   final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+
+  @override
+  void initState() {
+    super.initState();
+    searchController.addListener(() {
+      setState(() {
+        searchString = searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +92,18 @@ class _MainAppState extends State<MainApp> {
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+              ),
+            ),
             FutureBuilder<List<Item>>(
                 future: DatabaseManager.instance.getAllItems(),
                 builder:
@@ -81,11 +111,16 @@ class _MainAppState extends State<MainApp> {
                   if (!snapshot.hasData) {
                     return Center(child: CircularProgressIndicator());
                   }
-                  return snapshot.data!.isEmpty
+                  List<Item> filteredList = snapshot.data!
+                      .where((item) =>
+                          item.title.toLowerCase().contains(searchString))
+                      .toList();
+
+                  return filteredList.isEmpty
                       ? Center(child: Text('No items found'))
                       : ListView(
                           shrinkWrap: true,
-                          children: snapshot.data!.map((item) {
+                          children: filteredList.map((item) {
                             return ListTile(
                               leading: Checkbox(
                                 value: item.done,
