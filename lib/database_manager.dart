@@ -8,22 +8,42 @@ class Item {
   int? id;
   String title;
   bool done;
+  DateTime? created_at;
+  DateTime? updated_at;
 
   // empty constructor
-  Item({this.id, required this.title, required this.done});
+  Item(
+      {this.id,
+      required this.title,
+      required this.done,
+      this.created_at,
+      this.updated_at});
 
   // construct class from json
   factory Item.fromMap(Map<String, dynamic> map) => Item(
       id: map['id'],
       title: map['title'],
-      done: map['done'] == 1 ? true : false);
+      done: map['done'] == 1 ? true : false,
+      created_at: DateTime.parse(map['created_at']),
+      updated_at: DateTime.parse(map['updated_at']));
 
   // return class as json
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
       'title': title,
-      'done': done == true ? 1 : 0
+      'done': done == true ? 1 : 0,
+      'created_at': created_at?.toIso8601String(),
+      'updated_at': updated_at?.toIso8601String()
+    };
+  }
+
+  Map<String, dynamic> toMapForUpdate() {
+    return <String, dynamic>{
+      'id': id,
+      'title': title,
+      'done': done == true ? 1 : 0,
+      'updated_at': updated_at?.toIso8601String()
     };
   }
 }
@@ -31,7 +51,7 @@ class Item {
 // singleton class to manage the database
 class DatabaseManager {
   static const _databaseName = "ToDoDatabase.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
   static final itemTableName = 'items';
 
   // Make this a singleton class.
@@ -55,10 +75,12 @@ class DatabaseManager {
   Future _onCreate(Database db, int version) async {
     await db.execute('''
           CREATE TABLE $itemTableName (
-            id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            done INTEGER NOT NULL
-          )
+          id INTEGER PRIMARY KEY,
+          title TEXT NOT NULL,
+          done INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
           ''');
   }
 
@@ -85,7 +107,7 @@ class DatabaseManager {
 
   Future<int> updateItem(Item item) async {
     Database db = await database;
-    int id = await db.update(itemTableName, item.toMap(),
+    int id = await db.update(itemTableName, item.toMapForUpdate(),
         where: 'id = ?', whereArgs: [item.id]);
     return id;
   }

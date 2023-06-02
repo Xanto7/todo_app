@@ -47,27 +47,16 @@ class _MainAppState extends State<MainApp> {
                   flex: 1,
                   child: ElevatedButton(
                       onPressed: () async {
-                        await DatabaseManager.instance.insertItem(
-                            Item(title: itemTextController.text, done: false));
+                        await DatabaseManager.instance.insertItem(Item(
+                            title: itemTextController.text,
+                            done: false,
+                            created_at: DateTime.now(),
+                            updated_at: DateTime.now()));
                         setState(() {
                           itemTextController.clear();
                         });
                       },
                       child: const Text('Save')),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: ElevatedButton(
-                      onPressed: () async {
-                        if (selectedId != null) {
-                          await DatabaseManager.instance
-                              .deleteItem(selectedId!);
-                        }
-                        setState(() {
-                          itemTextController.clear();
-                        });
-                      },
-                      child: const Text('Del')),
                 ),
               ],
             ),
@@ -91,13 +80,29 @@ class _MainAppState extends State<MainApp> {
                                     DatabaseManager.instance.updateItem(Item(
                                         id: item.id,
                                         title: item.title,
+                                        updated_at: DateTime.now(),
                                         done: value!));
                                     setState(() {});
                                   },
                                   activeColor: Colors.white,
                                   checkColor: Colors.blue,
                                 ),
-                                title: Text(item.title),
+                                trailing: ElevatedButton(
+                                    onPressed: () async {
+                                      await DatabaseManager.instance
+                                          .deleteItem(item.id!);
+                                      setState(() {});
+                                    },
+                                    child: const Text('Del')),
+                                title: Row(children: [
+                                  Expanded(flex: 3, child: Text(item.title)),
+                                  Expanded(
+                                      flex: 2,
+                                      child: Text(item.created_at.toString())),
+                                  Expanded(
+                                      flex: 2,
+                                      child: Text(item.updated_at.toString())),
+                                ]),
                                 onTap: () {
                                   setState(() {
                                     selectedId = item.id;
