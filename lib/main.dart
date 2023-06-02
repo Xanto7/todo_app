@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:todo_app/database_manager.dart';
+import 'package:todo_app/item_input_field.dart';
+import 'package:todo_app/item_list.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +19,6 @@ class _MainAppState extends State<MainApp> {
   final TextEditingController updateController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
   String searchString = "";
-  int? selectedId;
-  final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
 
   @override
   void initState() {
@@ -36,6 +34,10 @@ class _MainAppState extends State<MainApp> {
   void dispose() {
     searchController.dispose();
     super.dispose();
+  }
+
+  void refreshItemList() {
+    setState(() {});
   }
 
   @override
@@ -54,42 +56,9 @@ class _MainAppState extends State<MainApp> {
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    flex: 4,
-                    child: TextField(
-                      controller: itemTextController,
-                      cursorColor: Colors.black,
-                      style: TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.5),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue),
-                            borderRadius: BorderRadius.circular(30)),
-                        hintText: 'Enter task',
-                        hintStyle: TextStyle(color: Colors.black),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    flex: 1,
-                    child: ElevatedButton(
-                        onPressed: () async {
-                          await DatabaseManager.instance.insertItem(Item(
-                              title: itemTextController.text,
-                              done: false,
-                              created_at: DateTime.now(),
-                              updated_at: DateTime.now()));
-                          setState(() {
-                            itemTextController.clear();
-                          });
-                        },
-                        child: const Text('Save')),
-                  ),
-                ],
+              child: ItemInputField(
+                itemTextController: itemTextController,
+                refreshItemList: refreshItemList,
               ),
             ),
             Padding(
@@ -104,89 +73,10 @@ class _MainAppState extends State<MainApp> {
                 ),
               ),
             ),
-            FutureBuilder<List<Item>>(
-                future: DatabaseManager.instance.getAllItems(),
-                builder:
-                    (BuildContext context, AsyncSnapshot<List<Item>> snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  List<Item> filteredList = snapshot.data!
-                      .where((item) =>
-                          item.title.toLowerCase().contains(searchString))
-                      .toList();
-
-                  return filteredList.isEmpty
-                      ? Center(child: Text('No items found'))
-                      : ListView(
-                          shrinkWrap: true,
-                          children: filteredList.map((item) {
-                            return ListTile(
-                              leading: Checkbox(
-                                value: item.done,
-                                onChanged: (bool? value) {
-                                  DatabaseManager.instance.updateItem(Item(
-                                      id: item.id,
-                                      title: item.title,
-                                      updated_at: DateTime.now(),
-                                      done: value!));
-                                  setState(() {});
-                                },
-                                activeColor: Colors.blue,
-                                checkColor: Colors.white,
-                              ),
-                              trailing: IconButton(
-                                  icon: Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () async {
-                                    await DatabaseManager.instance
-                                        .deleteItem(item.id!);
-                                    setState(() {});
-                                  }),
-                              title: Text(item.title),
-                              subtitle: Text(
-                                  "Last update: ${item.updated_at != null ? formatter.format(item.updated_at!) : 'Not updated yet'}"),
-                              onTap: () {
-                                updateController.text = item.title;
-                                showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: Text('Edit task'),
-                                        content: TextField(
-                                          controller: updateController,
-                                          decoration: InputDecoration(
-                                              hintText: "Enter new task name"),
-                                        ),
-                                        actions: <Widget>[
-                                          TextButton(
-                                            child: Text('Save'),
-                                            onPressed: () {
-                                              DatabaseManager.instance
-                                                  .updateItem(Item(
-                                                      id: item.id,
-                                                      title:
-                                                          updateController.text,
-                                                      updated_at:
-                                                          DateTime.now(),
-                                                      done: item.done));
-                                              setState(() {});
-                                              Navigator.of(context).pop();
-                                            },
-                                          ),
-                                          TextButton(
-                                            child: Text('Cancel'),
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                          )
-                                        ],
-                                      );
-                                    });
-                              },
-                            );
-                          }).toList(),
-                        );
-                }),
+            ItemList(
+              updateController: updateController,
+              searchString: searchString,
+            ),
           ],
         ),
       ),
