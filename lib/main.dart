@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:todo_app/database_manager.dart';
 
 void main() {
@@ -15,100 +16,138 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   final TextEditingController itemTextController = TextEditingController();
+  final TextEditingController updateController = TextEditingController(); //
   int? selectedId;
+  final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       home: Scaffold(
         appBar: AppBar(
-          title: Text('ToDo App'),
+          title: Text('ToDo App', textAlign: TextAlign.center),
+          centerTitle: true,
         ),
         body: Column(
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  flex: 4,
-                  child: TextField(
-                    controller: itemTextController,
-                    cursorColor: Colors.black,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.blueAccent,
-                      border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                          borderRadius: BorderRadius.circular(50)),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    flex: 4,
+                    child: TextField(
+                      controller: itemTextController,
+                      cursorColor: Colors.black,
+                      style: TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.5),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue),
+                            borderRadius: BorderRadius.circular(30)),
+                        hintText: 'Enter task',
+                        hintStyle: TextStyle(color: Colors.black),
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: ElevatedButton(
-                      onPressed: () async {
-                        await DatabaseManager.instance.insertItem(Item(
-                            title: itemTextController.text,
-                            done: false,
-                            created_at: DateTime.now(),
-                            updated_at: DateTime.now()));
-                        setState(() {
-                          itemTextController.clear();
-                        });
-                      },
-                      child: const Text('Save')),
-                ),
-              ],
+                  SizedBox(width: 10),
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                        onPressed: () async {
+                          await DatabaseManager.instance.insertItem(Item(
+                              title: itemTextController.text,
+                              done: false,
+                              created_at: DateTime.now(),
+                              updated_at: DateTime.now()));
+                          setState(() {
+                            itemTextController.clear();
+                          });
+                        },
+                        child: const Text('Save')),
+                  ),
+                ],
+              ),
             ),
             FutureBuilder<List<Item>>(
                 future: DatabaseManager.instance.getAllItems(),
                 builder:
                     (BuildContext context, AsyncSnapshot<List<Item>> snapshot) {
                   if (!snapshot.hasData) {
-                    return Center(child: Text('Loading...'));
+                    return Center(child: CircularProgressIndicator());
                   }
                   return snapshot.data!.isEmpty
                       ? Center(child: Text('No items found'))
                       : ListView(
                           shrinkWrap: true,
                           children: snapshot.data!.map((item) {
-                            return Center(
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: item.done,
-                                  onChanged: (bool? value) {
-                                    DatabaseManager.instance.updateItem(Item(
-                                        id: item.id,
-                                        title: item.title,
-                                        updated_at: DateTime.now(),
-                                        done: value!));
-                                    setState(() {});
-                                  },
-                                  activeColor: Colors.white,
-                                  checkColor: Colors.blue,
-                                ),
-                                trailing: ElevatedButton(
-                                    onPressed: () async {
-                                      await DatabaseManager.instance
-                                          .deleteItem(item.id!);
-                                      setState(() {});
-                                    },
-                                    child: const Text('Del')),
-                                title: Row(children: [
-                                  Expanded(flex: 3, child: Text(item.title)),
-                                  Expanded(
-                                      flex: 2,
-                                      child: Text(item.created_at.toString())),
-                                  Expanded(
-                                      flex: 2,
-                                      child: Text(item.updated_at.toString())),
-                                ]),
-                                onTap: () {
-                                  setState(() {
-                                    selectedId = item.id;
-                                  });
+                            return ListTile(
+                              leading: Checkbox(
+                                value: item.done,
+                                onChanged: (bool? value) {
+                                  DatabaseManager.instance.updateItem(Item(
+                                      id: item.id,
+                                      title: item.title,
+                                      updated_at: DateTime.now(),
+                                      done: value!));
+                                  setState(() {});
                                 },
+                                activeColor: Colors.blue,
+                                checkColor: Colors.white,
                               ),
+                              trailing: IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () async {
+                                    await DatabaseManager.instance
+                                        .deleteItem(item.id!);
+                                    setState(() {});
+                                  }),
+                              title: Text(item.title),
+                              subtitle: Text(
+                                  "Last update: ${item.updated_at != null ? formatter.format(item.updated_at!) : 'Not updated yet'}"),
+                              onTap: () {
+                                updateController.text = item.title;
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text('Edit task'),
+                                        content: TextField(
+                                          controller: updateController,
+                                          decoration: InputDecoration(
+                                              hintText: "Enter new task name"),
+                                        ),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            child: Text('Save'),
+                                            onPressed: () {
+                                              DatabaseManager.instance
+                                                  .updateItem(Item(
+                                                      id: item.id,
+                                                      title:
+                                                          updateController.text,
+                                                      updated_at:
+                                                          DateTime.now(),
+                                                      done: item.done));
+                                              setState(() {});
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          TextButton(
+                                            child: Text('Cancel'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          )
+                                        ],
+                                      );
+                                    });
+                              },
                             );
                           }).toList(),
                         );
